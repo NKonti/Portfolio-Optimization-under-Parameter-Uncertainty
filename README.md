@@ -162,22 +162,22 @@ The optimization framework incorporates realistic portfolio management constrain
 * Maximum position size: 30%
 * Turnover constraint
 * Transaction costs
+* User-Defined Investment Budget
 * Diversification penalty
 
 ---
 
 ## Backtesting Framework
 
-A walk-forward backtest was conducted:
+For each rebalancing period the framework:
 
-1. Forecast expected returns using Random Forest
-2. Estimate covariance matrices
-3. Optimize portfolio weights
-4. Apply turnover constraints and transaction costs
-5. Observe realized next-month returns
-6. Repeat monthly until the end of the sample
-
-All reported results are strictly out-of-sample.
+1. Forecast expected returns.
+2. Estimate the covariance matrix.
+3. Optimize portfolio weights.
+4. Apply realistic portfolio constraints.
+5. Translate optimal weights into a user-defined investment budget.
+6. Evaluate next-month realized returns.
+7. Repeat through the entire out-of-sample period.
 
 ---
 
