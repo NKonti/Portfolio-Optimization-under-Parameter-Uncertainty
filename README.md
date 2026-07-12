@@ -267,7 +267,7 @@ The results show that Stochastic Optimization achieved the lowest annualized por
 
 The Equal Weight portfolio benefited from its complete independence from parameter estimation and achieved the highest out-of-sample Sharpe Ratio. In contrast, the optimization-based approaches attempted to exploit forecasted return information and explicitly account for uncertainty, but remained dependent on the quality of the underlying return forecasts.
 
-From an economic perspective, Stochastic Optimization may therefore represent the most attractive solution for highly risk-averse investors, pension funds, insurance companies and other long-term allocators whose primary objective is capital preservation and portfolio stability rather than maximizing expected return.
+From an economic perspective, the stochastic optimization framework may represent the most attractive solution for highly risk-averse investors whose primary objective is to achieve stable long-term, risk-adjusted returns rather than maximizing expected return at any cost. By explicitly incorporating scenario uncertainty into the optimization process, the model substantially reduced portfolio volatility while maintaining a competitive Sharpe Ratio. Such characteristics may be particularly relevant for long-term institutional investors, including pension funds and insurance companies, where capital preservation, portfolio stability and effective risk management are fundamental investment objectives alongside the generation of sustainable returns.
 
 
 
