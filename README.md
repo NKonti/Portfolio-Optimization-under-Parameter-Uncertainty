@@ -87,7 +87,7 @@ Adjustierte tägliche ETF-Kurse (Yahoo Finance)
              output/module5/
 ```
 
-**Entscheidende Abgrenzung:** Obwohl Modul 02 unter anderem Random Forest und XGBoost untersucht, verwenden die **aktuellen Portfolios den expandierenden historischen arithmetischen Renditemittelwert (HIST)** als Renditeerwartung. Die ML-Prognosen fließen **nicht** in die aktuellen fünf Portfolios ein. Das unterscheidet diese Fassung von früheren Projektversionen.
+**Renditeinput der Optimierung:** Modul 02 vergleicht HIST, OLS, Random Forest und XGBoost. Für die anschließende Portfoliokonstruktion wird der **expandierende historische arithmetische Renditemittelwert (HIST)** einheitlich verwendet. Die übrigen Verfahren dienen der Prognoseevaluation und werden nicht zur Gewichtsermittlung eingesetzt.
 
 ## 4. Daten, Prognosen und Schätzmethoden
 
@@ -142,52 +142,44 @@ $$
 
 Für die Portfolioallokation ist neben dem absoluten Prognosefehler auch relevant, ob das Modell **Renditeunterschiede zwischen ETFs** sinnvoll erkennt. Allerdings beweist selbst ein positiver IC noch keinen ökonomisch verwertbaren Vorteil nach Transaktionskosten.
 
-#### 4.2.3 Dokumentierte Ergebnisse des früheren ML-Prognosevergleichs
+#### 4.2.3 Prognosevergleich: Auswahlkriterien und Ergebnisdokumentation
 
-Die folgenden Zahlen stammen aus der **früheren Forschungsfassung** des Projekts. Sie dokumentieren, warum wir uns intensiv mit der Modellwahl auseinandergesetzt haben. **Sie sind keine aktuelle Vier-Modell-Vergleichstabelle mit HIST** und dürfen nicht als solche ausgegeben werden.
+Für die Auswahl eines Renditeinputs sind **Prognosefehler, Querschnittsinformation, Stabilität und Modellkomplexität** gemeinsam zu beurteilen. Ein geringer RMSE oder MAE ist nicht automatisch gleichbedeutend mit einem wirtschaftlich nutzbaren Allokationssignal: Die Optimierung reagiert insbesondere auf Unterschiede zwischen den erwarteten ETF-Renditen. Ebenso kann ein hoher IC in einzelnen Monaten mit instabilen Prognosen oder hohen Umschichtungen einhergehen.
 
-**Validierungsperiode 2019–2022 – frühere Projektfassung**
+**Vergleich der im Projekt untersuchten Verfahren**
 
-| Modell | RMSE ↓ | MAE ↓ | Pearson-IC ↑ | Rank-IC ↑ |
-|:---|---:|---:|---:|---:|
-| **XGBoost** | **0,056600** | **0,039687** | **0,076390** | **0,036398** |
-| Random Forest | 0,057445 | 0,040091 | 0,033891 | −0,007626 |
-| OLS | 0,057557 | 0,040205 | 0,026253 | 0,025204 |
+| Modell | Informationsbasis | Relevanz für die Optimierung | Methodisches Risiko |
+|:---|:---|:---|:---|
+| **HIST** | Bis zum Entscheidungszeitpunkt beobachtete ETF-Monatsrenditen | Einheitlicher, direkt nachvollziehbarer Erwartungsrenditevektor | Stichprobenfehler und langsame Reaktion auf Regimewechsel |
+| **OLS** | Historische Renditemerkmale und lineare Koeffizienten | Kann lineare Vorhersagesignale berücksichtigen | Instabile Koeffizienten und geringe Signalstärke |
+| **Random Forest (RF)** | Historische Merkmale und nichtlineare Baumregeln | Kann Interaktionen und Nichtlinearitäten abbilden | Überanpassung und instabile Vorhersagerangfolgen |
+| **XGBoost (XGB)** | Historische Merkmale und sequenziell trainierte Bäume | Flexible nichtlineare Prognosen | Sensitivität gegenüber Hyperparametern und Marktregimen |
 
-XGBoost erreichte in dieser früheren Validierung die geringsten Fehler und den höchsten Pearson-IC. Der Vorsprung war jedoch klein und nicht über alle Modellvarianten und Kriterien hinweg eindeutig.
+**Numerische Validierungs- und Testergebnisse:** Das Prognosemodul erzeugt eine Modellübersicht in `output/module2/model_summary.csv` mit den aktuellen Kennzahlen für HIST, OLS, RF und XGB. Die exakten Werte dieser Datei liegen für die vorliegende README-Bearbeitung nicht vor. Deshalb werden hier **keine unbelegten RMSE-, MAE-, IC- oder Rangwerte** eingesetzt. Für eine numerische Gegenüberstellung ist ausschließlich diese Ausgabe des gegenwärtigen Prognosemoduls maßgeblich.
 
-**Testperiode 2023–2026 – frühere Projektfassung**
+#### 4.2.4 Warum HIST als Renditeinput verwendet wird
 
-| Modell | RMSE ↓ | MAE ↓ | Pearson-IC ↑ | Rank-IC ↑ |
-|:---|---:|---:|---:|---:|
-| **Random Forest** | **0,041205** | **0,031276** | **0,088586** | **0,065042** |
-| OLS | 0,041402 | 0,031472 | 0,021135 | 0,000920 |
-| XGBoost | 0,041488 | 0,031511 | −0,025185 | −0,080060 |
+Die Entscheidung für HIST folgt der **Zielsetzung des Untersuchungsdesigns**: Im Mittelpunkt steht die Frage, wie sich fünf Allokationsverfahren unter **demselben unsicheren Renditeinput** verhalten. Die Auswahl ist keine Behauptung, dass der historische Mittelwert für alle Märkte und Zeiträume bessere Prognosen als Random Forest, OLS oder XGBoost liefert.
 
-Im späteren Vergleich lag Random Forest vorn, während XGBoost seinen Validierungsvorsprung nicht halten konnte. Die frühere Projektfassung setzte deshalb RF ein. Die aktuelle Forschungsfassung verfolgt bewusst einen anderen Ansatz. Da die Testergebnisse in die Forschungsentwicklung eingeflossen sind, wäre es methodisch falsch, die Periode nachträglich weiterhin als vollständig unberührten Modellwahltest zu bezeichnen.
+1. **Kontrollierter Modellvergleich:** MV, ELL, BS und STOCH erhalten denselben geschätzten Renditevektor. Damit werden Unterschiede in den Portfolios primär durch Zielfunktionen, Risikomaße und Unsicherheitsbehandlung statt durch verschiedene Prognosealgorithmen verursacht. EQ bleibt prognoseunabhängig.
+2. **Geringe zusätzliche Schätzkomplexität:** HIST benötigt weder Merkmalsselektion noch eine Hyperparametersuche. OLS muss Regressionskoeffizienten schätzen; RF und XGB benötigen zusätzlich die Auswahl von Baum- und Regularisierungsparametern. Bei schwachen monatlichen Renditesignalen können diese zusätzlichen Freiheitsgrade die Schätzinstabilität erhöhen.
+3. **Direkt interpretierbare Unsicherheit:** Der historische Mittelwert bleibt ein unsicherer Schätzer. Seine Schätzunsicherheit wird separat über die HAC-basierte Matrix $\hat\Omega_t$ modelliert und insbesondere in ELL und BS berücksichtigt. Das macht die Verbindung zwischen Prognoseannahme und robuster Optimierung transparent.
+4. **Ökonomische Verwertbarkeit statt bloßer Modellkomplexität:** Ein ML-Modell wäre als Optimierungsinput vor allem dann überzeugend, wenn es zeitlich stabil bessere Prognosen **und** eine bessere nach Kosten realisierte Portfolioallokation ermöglichte. Eine höhere Flexibilität der Modellklasse allein belegt diesen Vorteil nicht.
+5. **Reproduzierbarkeit:** Der expandierende Mittelwert ist mit wenigen Annahmen nachzurechnen und für alle zwölf ETFs konsistent zu aktualisieren. Das erleichtert die Überprüfung des gesamten Walk-Forward-Prozesses.
 
-> **Datenabgrenzung:** Für den **aktuellen** Vergleich HIST/OLS/RF/XGB liegen in den hier dokumentierten README-Quellen keine verifizierten Zahlen für die HIST-Zeile und keine vollständige aktuelle Vier-Modell-Ergebnismatrix vor. Deshalb werden keine entsprechenden RMSE-, MAE- oder IC-Werte erfunden. Die aktuellen Originaltabellen aus `output/module2/model_summary.csv` sollten bei Veröffentlichung zusätzlich hier aufgenommen werden, sofern sie verfügbar sind.
-
-#### 4.2.4 Warum für die aktuelle Portfoliooptimierung HIST verwendet wird
-
-**Die Wahl von HIST ist eine methodische Entscheidung für eine transparente, einheitliche Renditeerwartung – kein empirisch bewiesener Sieg von HIST über Random Forest.** Sie lässt sich aus vier Gesichtspunkten begründen:
-
-1. **Geringere Modellkomplexität:** HIST benötigt keine Feature-Auswahl, Baumstruktur oder ML-Hyperparameter. Dadurch werden zusätzliche Freiheitsgrade bei der Renditeschätzung vermieden.
-2. **Klarere Identifikation der Optimierungseffekte:** Die zentrale Forschungsfrage betrifft den Vergleich der **Allokationsverfahren unter Schätzunsicherheit**. Ein einheitlicher, nachvollziehbarer Renditeinput erleichtert es, Unterschiede auf die Zielfunktionen und Robustheitsannahmen zurückzuführen, statt auf unterschiedliche Prognosemodelle.
-3. **Unsicherheit bleibt explizit messbar:** Der historische Mittelwert ist selbst fehlerbehaftet. Gerade diese Schätzunsicherheit wird in ELL und BS mithilfe der HAC-basierten Unsicherheitsmatrix berücksichtigt. Ein einfacherer Schätzer beseitigt Unsicherheit also nicht, sondern macht sie transparenter.
-4. **Vorsicht bei instabilen ML-Signalen:** Der Wechsel der führenden ML-Modelle zwischen den früheren Validierungs- und Testergebnissen illustriert, dass Prognosegüte über Marktphasen variieren kann. Daraus folgt **nicht**, dass HIST generell besser prognostiziert; es begründet aber die Entscheidung, den Optimierungsvergleich nicht von einem nachträglich bevorzugten ML-Modell abhängig zu machen.
-
-Die tatsächliche Schätzung für ETF $i$ lautet:
+Für ETF $i$ ergibt sich die Schätzung zum Entscheidungszeitpunkt $t$ aus den bis dahin bekannten Monatsrenditen:
 
 $$
-\hat\mu_{i,t}=\frac{1}{T_{i,t}}\sum_{s=1}^{T_{i,t}}R_{i,s},
+\hat\mu_{i,t}=\frac{1}{T_{i,t}}\sum_{s=1}^{T_{i,t}}R_{i,s}.
 $$
 
-wobei ausschließlich zum Entscheidungszeitpunkt bekannte Monatsrenditen in das **expandierende historische Fenster** eingehen. Der daraus entstehende Vektor $\hat{\boldsymbol\mu}_t$ wird den Optimierungsmodellen **MV, ELL, BS und STOCH gemeinsam** bereitgestellt; **EQ** verwendet keine Renditeprognose in seiner Zielfunktion.
+$T_{i,t}$ ist die Anzahl verfügbarer historischer Renditen des ETFs. Das Schätzfenster **wächst im Zeitverlauf**; zukünftige Monatsrenditen gehen nicht in die jeweils aktuelle Schätzung ein. Die zwölf Schätzwerte bilden den Erwartungsrenditevektor $\hat{\boldsymbol\mu}_t$.
 
-#### 4.2.5 Konsequenz für die Interpretation des Backtests
+**Wichtige Einordnung:** Die Wahl von HIST ist für den Vergleich der Optimierungsverfahren methodisch begründet. Ob HIST den geringsten Prognosefehler unter den vier Verfahren aufweist, lässt sich nur anhand der aktuellen numerischen Modulausgabe feststellen. Ebenso beweist der erfolgreiche HIST-basierte Backtest keine allgemeine Prognoseüberlegenheit von HIST.
 
-Der Backtest beantwortet damit die Frage, **welches Optimierungsverfahren mit demselben HIST-Renditeinput** unter den untersuchten Restriktionen die günstigsten realisierten Rendite- und Risikoeigenschaften aufweist. Er beantwortet **nicht**, ob HIST als Prognosemodell grundsätzlich besser als RF, OLS oder XGBoost ist. Ein solcher Nachweis würde eine gesonderte, zeitlich sauber getrennte und vollständig dokumentierte Prognose- beziehungsweise Strategieevaluation erfordern.
+#### 4.2.5 Konsequenz für den Portfoliovergleich
+
+Die empirische Untersuchung vergleicht **EQ, MV, ELL, BS und STOCH unter identischen Marktdaten, gemeinsamen Restriktionen und – soweit benötigt – demselben HIST-Renditevektor**. So lässt sich analysieren, welchen Einfluss die unterschiedlichen Optimierungsziele auf realisierte Rendite, Volatilität, Drawdown, CVaR und Handelskosten haben. Der Vergleich isoliert nicht sämtliche Einflüsse, da die Modelle teilweise unterschiedliche zusätzliche Risiko- und Unsicherheitsschätzer verwenden.
 
 ### 4.3 Kovarianz und HAC-Schätzunsicherheit
 
@@ -576,7 +568,7 @@ Die vollständigen 49 Einzeltabellen bleiben bewusst in der separaten Markdown-E
 
 1. **Begrenzter Beobachtungszeitraum:** 45 Monatsrenditen erlauben keine allgemeingültige Aussage über sämtliche Marktregime.
 2. **Schätzunsicherheit:** Historische Mittelwerte, Kovarianzen und HAC-Matrizen bleiben fehleranfällig. Auch robuste Unsicherheitsmengen beruhen auf Modellannahmen.
-3. **Forschungsbedingte Auswahlentscheidungen:** Der vorherige Prognosevergleich beeinflusste das Design; die Testperiode ist daher nicht in jeder Hinsicht unabhängig von der Forschungsentwicklung.
+3. **Modellauswahl und Testinterpretation:** Die Wahl des HIST-Inputs und die untersuchten Parameter sind Teil des Forschungsdesigns. Da Modellauswahl und Forschungsentscheidungen die Bewertung beeinflussen können, werden die Ergebnisse nicht als vollständig unabhängiger Nachweis einer allgemein überlegenen Prognosestrategie interpretiert.
 4. **Ex-post Sensitivität statt Kalibrierung:** Die 49 Parameterfälle untersuchen Modellreaktionen, nicht die Güte einer vorab festgelegten historischen Parameterauswahl.
 5. **Vereinfachte Handelsausführung:** Monatsendkonvention, keine separate Modellierung von Spread, Slippage, Steuern oder Markteinfluss.
 6. **Rückwärtsgerichtete Szenarien:** Die 120 historischen STOCH-Szenarien können bislang unbekannte Krisenverläufe nicht zuverlässig repräsentieren; die empirische Tail-Risk-Schätzung basiert auf wenigen Extrembeobachtungen.
