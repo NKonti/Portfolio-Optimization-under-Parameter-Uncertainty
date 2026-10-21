@@ -118,7 +118,7 @@ $$
 
 Dabei bezeichnet $X_{i,t}$ die zum Entscheidungszeitpunkt verfügbaren Merkmale. Das tatsächlich realisierte $R_{i,t+1}$ ist bei der Prognose **noch nicht bekannt**.
 
-**Verwendete Merkmale:** Momentum über **1, 3, 6 und 12 Monate**, realisierte Volatilität über **3, 6 und 12 Monate** sowie maximaler Drawdown über **12 Monate**. Die Modelle werden anhand zeitlich geordneter Beobachtungen bewertet; eine zufällige Durchmischung der Monatsdaten wäre für diesen Anwendungsfall methodisch ungeeignet.
+**Verwendete Merkmale:** Momentum über **1, 3, 6 und 12 Monate**, realisierte Volatilität über **3, 6 und 12 Monate** sowie maximaler Drawdown über **12 Monate**. Die Modelle werden anhand zeitlich geordneter Beobachtungen bewertet.
 
 #### 4.2.2 Bewertungskennzahlen
 
