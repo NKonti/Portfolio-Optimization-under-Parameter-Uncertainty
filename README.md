@@ -228,7 +228,7 @@ $$
 
 **Ökonomische Idee:** Kapital möglichst gleichmäßig auf alle zwölf ETFs verteilen. Anders als die übrigen Ansätze nutzt EQ weder geschätzte Renditen noch Kovarianzen in seiner Zielfunktion. Wegen der gemeinsamen Umschichtungsgrenze kann das realisierte Portfolio zeitweise von exakt $1/12$ je ETF abweichen.
 
-### 5.2 MV – Klassische Mittelwert-Varianz-Optimierung
+### 5.2 MV – Klassische Mittelwert-Varianz-Optimierung (nach Harry Markowitz)
 
 $$
 \max_{\mathbf w\in\mathcal W}
