@@ -50,13 +50,13 @@ Die zwölf ETFs bilden Aktien-, Staatsanleihen-, Kredit-, Immobilien- und Goldex
 
 | Modul | Python-Datei | Aufgabe |
 |:---:|:---|:---|
-| **01** | `01_data_engineering.py` | Bereinigung und Aggregation adjustierter Kursdaten; Prüfung von Datenabdeckung und zeitlicher Konsistenz |
-| **02** | `02_return_forecasting.py` | Vergleich historischer, statistischer und ML-basierter Renditeprognosen |
+| **01** | `01_data_pipeline.py` | Bereinigung und Aggregation adjustierter Kursdaten; Prüfung von Datenabdeckung und zeitlicher Konsistenz |
+| **02** | `02_forecasting_model_selection.py` | Vergleich historischer, statistischer und ML-basierter Renditeprognosen |
 | **03** | `03_portfolio_optimization.py` | Schätzung der Optimierungseingaben und Lösung von EQ, MV, ELL, BS und STOCH |
 | **04** | `04_walk_forward_backtest.py` | Einheitlicher monatlicher Backtest mit separaten, selbstfinanzierenden Portfolios |
 | **05** | `05_robustness_analysis.py` | 49 Sensitivitätsfälle, KPI- und Rangmatrizen, Diagnostik und mathematische Grenzfallprüfungen |
 
-*Hinweis zur Reproduzierbarkeit:* Die Dateien 03–05 sind die zugehörigen Implementierungen. Die Dateien 01 und 02 müssen im Repository unter den hier dokumentierten Namen vorliegen und zur verwendeten Datenschnittstelle passen.
+*Hinweis zur Reproduzierbarkeit:* Die Dateien 03–05 sind die zugehörigen Implementierungen. Die Module 01 und 02 sind entsprechend den tatsächlichen Dateinamen im Repository aufgeführt; die Datenschnittstellen müssen zu den Folgemodulen passen.
 
 ### 3.2 Datenfluss
 
@@ -97,23 +97,97 @@ Die Datenbasis besteht aus adjustierten ETF-Kursen von Yahoo Finance, die auf Mo
 
 Der Backtest umfasst **Januar 2023 bis September 2026**, also **45 realisierte Monatsrenditen**. Für jede Allokationsentscheidung werden ausschließlich bis zum Entscheidungsmonat verfügbare Renditebeobachtungen verwendet. Die Rendite des Folgemonats dient erst anschließend zur Bewertung des Portfolios. Dadurch wird ein direkter Zugriff auf zukünftige Renditen in der Entscheidungsschleife vermieden.
 
-### 4.2 Prognosevergleich und finale Renditeschätzung
+### 4.2 Auswahl der Renditeprognose für die Optimierung
 
-Im Prognosemodul werden historische Renditen sowie Modelle wie **OLS, Random Forest und XGBoost** betrachtet. Als erklärende Variablen dienen unter anderem:
+Die erwarteten Renditen sind ein zentraler Input der Modelle **MV, ELL, BS und STOCH**. Deshalb wurde vor der Portfoliokonstruktion untersucht, ob statistische und maschinelle Lernverfahren gegenüber einer einfachen historischen Renditeschätzung einen hinreichend belastbaren Prognosevorteil liefern.
 
-- Momentum über **1, 3, 6 und 12 Monate**;
-- realisierte Volatilität über **3, 6 und 12 Monate**;
-- maximaler Drawdown über **12 Monate**.
+#### 4.2.1 Verglichene Prognoseverfahren
 
-Die aktuelle Portfoliooptimierung verwendet bewusst den **expandierenden historischen Mittelwert**:
+| Verfahren | Grundidee | Potenzieller Vorteil | Wesentliche Schwäche |
+|:---|:---|:---|:---|
+| **HIST** – Historischer Mittelwert | Durchschnitt bisher beobachteter Monatsrenditen je ETF | Einfach, transparent, geringe Modellkomplexität | Langsame Anpassung an Strukturbrüche; Schätzfehler |
+| **OLS** – Lineare Regression | Lineare Beziehung zwischen Merkmalen und Folgemonatsrendite | Interpretierbar und effizient | Begrenzte Abbildung nichtlinearer Zusammenhänge |
+| **RF** – Random Forest | Mittelwert vieler Entscheidungsbäume | Nichtlineare Zusammenhänge und Interaktionen | Instabile Signale bei schwachem Signal-Rausch-Verhältnis |
+| **XGB** – XGBoost | Sequentiell optimierte Entscheidungsbäume | Flexible Modellierung komplexer Muster | Überanpassung und zeitlich instabile Muster möglich |
+
+Die Prognoseaufgabe lautet für ETF $i$ und Entscheidungsmonat $t$:
 
 $$
-\hat{\boldsymbol\mu}_t=\frac{1}{T_t}\sum_{s=1}^{T_t}\mathbf r_s.
+\hat\mu_{i,t+1}=f(X_{i,t}),\qquad
+R_{i,t+1}=\frac{P_{i,t+1}}{P_{i,t}}-1.
 $$
 
-Dabei bezeichnet $\mathbf r_s\in\mathbb R^{12}$ den Vektor beobachteter monatlicher ETF-Renditen und $T_t$ die Anzahl der zum Entscheidungszeitpunkt verfügbaren historischen Monate. Diese Schätzung ist transparent und leicht nachvollziehbar, bleibt aber anfällig für Stichprobenfehler und Regimewechsel.
+Dabei bezeichnet $X_{i,t}$ die zum Entscheidungszeitpunkt verfügbaren Merkmale. Das tatsächlich realisierte $R_{i,t+1}$ ist bei der Prognose **noch nicht bekannt**.
 
-**Wissenschaftliche Einschränkung:** Die Ergebnisse des Prognosevergleichs haben die Forschungsentwicklung beeinflusst. Die Jahre 2023–2026 sollten deshalb nicht als vollständig unberührte, unabhängige Modellauswahl-Testperiode bezeichnet werden.
+**Verwendete Merkmale:** Momentum über **1, 3, 6 und 12 Monate**, realisierte Volatilität über **3, 6 und 12 Monate** sowie maximaler Drawdown über **12 Monate**. Die Modelle werden anhand zeitlich geordneter Beobachtungen bewertet; eine zufällige Durchmischung der Monatsdaten wäre für diesen Anwendungsfall methodisch ungeeignet.
+
+#### 4.2.2 Bewertungskennzahlen
+
+Die Prognosequalität wird nicht anhand einer einzigen Kennzahl beurteilt:
+
+| Kennzahl | Aussage | Interpretation |
+|:---|:---|:---|
+| **RMSE** | Wurzel des mittleren quadrierten Prognosefehlers | Niedriger ist besser; große Fehler werden stärker bestraft |
+| **MAE** | Mittlerer absoluter Prognosefehler | Niedriger ist besser |
+| **Pearson-IC** | Zusammenhang zwischen prognostizierten und realisierten Renditen im ETF-Querschnitt | Höher ist besser; misst lineare Querschnittsinformation |
+| **Rank-IC (Spearman)** | Zusammenhang zwischen prognostizierter und realisierter ETF-Rangfolge | Höher ist besser; misst Rangordnungsqualität |
+
+Formal gilt für $n$ Prognosebeobachtungen:
+
+$$
+\mathrm{RMSE}=\sqrt{\frac1n\sum_{j=1}^n(y_j-\hat y_j)^2},
+\qquad
+\mathrm{MAE}=\frac1n\sum_{j=1}^n|y_j-\hat y_j|.
+$$
+
+Für die Portfolioallokation ist neben dem absoluten Prognosefehler auch relevant, ob das Modell **Renditeunterschiede zwischen ETFs** sinnvoll erkennt. Allerdings beweist selbst ein positiver IC noch keinen ökonomisch verwertbaren Vorteil nach Transaktionskosten.
+
+#### 4.2.3 Dokumentierte Ergebnisse des früheren ML-Prognosevergleichs
+
+Die folgenden Zahlen stammen aus der **früheren Forschungsfassung** des Projekts. Sie dokumentieren, warum wir uns intensiv mit der Modellwahl auseinandergesetzt haben. **Sie sind keine aktuelle Vier-Modell-Vergleichstabelle mit HIST** und dürfen nicht als solche ausgegeben werden.
+
+**Validierungsperiode 2019–2022 – frühere Projektfassung**
+
+| Modell | RMSE ↓ | MAE ↓ | Pearson-IC ↑ | Rank-IC ↑ |
+|:---|---:|---:|---:|---:|
+| **XGBoost** | **0,056600** | **0,039687** | **0,076390** | **0,036398** |
+| Random Forest | 0,057445 | 0,040091 | 0,033891 | −0,007626 |
+| OLS | 0,057557 | 0,040205 | 0,026253 | 0,025204 |
+
+XGBoost erreichte in dieser früheren Validierung die geringsten Fehler und den höchsten Pearson-IC. Der Vorsprung war jedoch klein und nicht über alle Modellvarianten und Kriterien hinweg eindeutig.
+
+**Testperiode 2023–2026 – frühere Projektfassung**
+
+| Modell | RMSE ↓ | MAE ↓ | Pearson-IC ↑ | Rank-IC ↑ |
+|:---|---:|---:|---:|---:|
+| **Random Forest** | **0,041205** | **0,031276** | **0,088586** | **0,065042** |
+| OLS | 0,041402 | 0,031472 | 0,021135 | 0,000920 |
+| XGBoost | 0,041488 | 0,031511 | −0,025185 | −0,080060 |
+
+Im späteren Vergleich lag Random Forest vorn, während XGBoost seinen Validierungsvorsprung nicht halten konnte. Die frühere Projektfassung setzte deshalb RF ein. Die aktuelle Forschungsfassung verfolgt bewusst einen anderen Ansatz. Da die Testergebnisse in die Forschungsentwicklung eingeflossen sind, wäre es methodisch falsch, die Periode nachträglich weiterhin als vollständig unberührten Modellwahltest zu bezeichnen.
+
+> **Datenabgrenzung:** Für den **aktuellen** Vergleich HIST/OLS/RF/XGB liegen in den hier dokumentierten README-Quellen keine verifizierten Zahlen für die HIST-Zeile und keine vollständige aktuelle Vier-Modell-Ergebnismatrix vor. Deshalb werden keine entsprechenden RMSE-, MAE- oder IC-Werte erfunden. Die aktuellen Originaltabellen aus `output/module2/model_summary.csv` sollten bei Veröffentlichung zusätzlich hier aufgenommen werden, sofern sie verfügbar sind.
+
+#### 4.2.4 Warum für die aktuelle Portfoliooptimierung HIST verwendet wird
+
+**Die Wahl von HIST ist eine methodische Entscheidung für eine transparente, einheitliche Renditeerwartung – kein empirisch bewiesener Sieg von HIST über Random Forest.** Sie lässt sich aus vier Gesichtspunkten begründen:
+
+1. **Geringere Modellkomplexität:** HIST benötigt keine Feature-Auswahl, Baumstruktur oder ML-Hyperparameter. Dadurch werden zusätzliche Freiheitsgrade bei der Renditeschätzung vermieden.
+2. **Klarere Identifikation der Optimierungseffekte:** Die zentrale Forschungsfrage betrifft den Vergleich der **Allokationsverfahren unter Schätzunsicherheit**. Ein einheitlicher, nachvollziehbarer Renditeinput erleichtert es, Unterschiede auf die Zielfunktionen und Robustheitsannahmen zurückzuführen, statt auf unterschiedliche Prognosemodelle.
+3. **Unsicherheit bleibt explizit messbar:** Der historische Mittelwert ist selbst fehlerbehaftet. Gerade diese Schätzunsicherheit wird in ELL und BS mithilfe der HAC-basierten Unsicherheitsmatrix berücksichtigt. Ein einfacherer Schätzer beseitigt Unsicherheit also nicht, sondern macht sie transparenter.
+4. **Vorsicht bei instabilen ML-Signalen:** Der Wechsel der führenden ML-Modelle zwischen den früheren Validierungs- und Testergebnissen illustriert, dass Prognosegüte über Marktphasen variieren kann. Daraus folgt **nicht**, dass HIST generell besser prognostiziert; es begründet aber die Entscheidung, den Optimierungsvergleich nicht von einem nachträglich bevorzugten ML-Modell abhängig zu machen.
+
+Die tatsächliche Schätzung für ETF $i$ lautet:
+
+$$
+\hat\mu_{i,t}=\frac{1}{T_{i,t}}\sum_{s=1}^{T_{i,t}}R_{i,s},
+$$
+
+wobei ausschließlich zum Entscheidungszeitpunkt bekannte Monatsrenditen in das **expandierende historische Fenster** eingehen. Der daraus entstehende Vektor $\hat{\boldsymbol\mu}_t$ wird den Optimierungsmodellen **MV, ELL, BS und STOCH gemeinsam** bereitgestellt; **EQ** verwendet keine Renditeprognose in seiner Zielfunktion.
+
+#### 4.2.5 Konsequenz für die Interpretation des Backtests
+
+Der Backtest beantwortet damit die Frage, **welches Optimierungsverfahren mit demselben HIST-Renditeinput** unter den untersuchten Restriktionen die günstigsten realisierten Rendite- und Risikoeigenschaften aufweist. Er beantwortet **nicht**, ob HIST als Prognosemodell grundsätzlich besser als RF, OLS oder XGBoost ist. Ein solcher Nachweis würde eine gesonderte, zeitlich sauber getrennte und vollständig dokumentierte Prognose- beziehungsweise Strategieevaluation erfordern.
 
 ### 4.3 Kovarianz und HAC-Schätzunsicherheit
 
@@ -150,7 +224,7 @@ $$
 
 $$
 \max_{\mathbf w\in\mathcal W}
-\left\{\hat\mu^\top\mathbf w-\lambda\,\mathbf w^\top\hat\Sigma\mathbf w\right\}.
+\lbrace \hat\mu^\top\mathbf w-\lambda\,\mathbf w^\top\hat\Sigma\mathbf w \rbrace.
 $$
 
 **Ökonomische Idee:** Eine möglichst hohe erwartete Rendite erzielen und gleichzeitig die Varianz des Portfolios begrenzen. Der Parameter $\lambda\geq0$ steuert die Gewichtung des Varianzterms (**Basis: $\lambda=3$**). Das Verfahren kann auf kleine Unterschiede in geschätzten Renditen empfindlich reagieren.
@@ -161,17 +235,17 @@ Die unbekannte tatsächliche Renditeerwartung wird innerhalb einer ellipsoidalen
 
 $$
 \mathcal U_{\mathrm{ELL}}=
-\left\{\hat\mu+\rho\hat\Omega^{1/2}\mathbf u:
-\|\mathbf u\|_2\leq1\right\}.
+\lbrace \hat\mu+\rho\hat\Omega^{1/2}\mathbf u:
+\|\mathbf u\|_2\leq1 \rbrace.
 $$
 
 Daraus folgt die robuste Zielfunktion:
 
 $$
 \max_{\mathbf w\in\mathcal W}
-\left\{\hat\mu^\top\mathbf w
+\lbrace \hat\mu^\top\mathbf w
 -\lambda\mathbf w^\top\hat\Sigma\mathbf w
--\rho\sqrt{\mathbf w^\top\hat\Omega\mathbf w}\right\}.
+-\rho\sqrt{\mathbf w^\top\hat\Omega\mathbf w} \rbrace.
 $$
 
 **Ökonomische Idee:** Portfolios werden zusätzlich bestraft, wenn ihre erwartete Rendite besonders stark von unsicheren Schätzungen abhängt. Der Radius $\rho$ steuert diese Absicherung (**Basis: $\rho=1$**). Bei **$\rho=0$** fällt die zusätzliche Strafe weg und ELL ist mathematisch identisch mit MV.
@@ -204,8 +278,8 @@ STOCH verwendet **120 gemeinsame historische Monatsrenditeszenarien** und bestra
 
 $$
 \max_{\mathbf w\in\mathcal W,\,\eta,\,\mathbf u\geq0}
-\left\{\hat\mu^\top\mathbf w-\gamma_{\mathrm{CVaR}}
-\left(\eta+\frac{1}{(1-\alpha)S}\sum_{s=1}^{S}u_s\right)\right\}
+\lbrace \hat\mu^\top\mathbf w-\gamma_{\mathrm{CVaR}}
+\left(\eta+\frac{1}{(1-\alpha)S}\sum_{s=1}^{S}u_s\right) \rbrace
 $$
 
 unter den Nebenbedingungen
@@ -226,9 +300,9 @@ Dabei ist $\eta$ eine Verlustschwelle und $u_s$ beschreibt die darüber hinausge
 Alle fünf Verfahren unterliegen derselben zulässigen Menge:
 
 $$
-\mathcal W=\left\{\mathbf w:\sum_{i=1}^{12}w_i=1,\quad
+\mathcal W=\lbrace \mathbf w:\sum_{i=1}^{12}w_i=1,\quad
 0\leq w_i\leq0{,}30,\quad
-\|\mathbf w-\mathbf w_t^-\|_1\leq0{,}50\right\}.
+\|\mathbf w-\mathbf w_t^-\|_1\leq0{,}50 \rbrace.
 $$
 
 $\mathbf w_t^-$ bezeichnet die Gewichte unmittelbar **vor** einer Umschichtung. Die $L^1$-Grenze von 0,50 ist die **Summe der absoluten Gewichtsänderungen** und nicht gleichbedeutend mit einer einseitigen Umschichtungsquote von 50 %. Sie gilt nach der anfänglichen Investition.
@@ -393,9 +467,9 @@ Weniger restriktive Konzentrationsgrenzen können Portfolios stärker auf einzel
 Zwei zentrale Identitäten dienen der Prüfung der Modellkonsistenz:
 
 $$
-\boxed{\operatorname{ELL}(\rho=0)=\operatorname{MV}}
+\boxed{\mathrm{ELL}(\rho=0)=\mathrm{MV}}
 \qquad
-\boxed{\operatorname{BS}(\Gamma=0)=\operatorname{MV}}.
+\boxed{\mathrm{BS}(\Gamma=0)=\mathrm{MV}}.
 $$
 
 Bei identischen Daten, Nebenbedingungen und übrigen Parametern sind die jeweiligen Optimierungsprobleme mathematisch gleich. Modul 03 verwendet für diese Grenzfälle dieselbe MV-Formulierung; Modul 05 erstellt dazu numerische Diagnosen und berücksichtigt Gleichstände in den Rangtabellen.
@@ -417,8 +491,8 @@ $R_t$ bezeichnet die realisierte **monatliche Nettorendite**, $V_t$ den Depotwer
 | Kennzahl | Definition | Bevorzugte Richtung |
 |:---|:---|:---|
 | **Annualisierte Nettorendite** | $(V_T/V_0)^{12/T}-1$ | Höher |
-| **Annualisierte Volatilität** | $\operatorname{sd}(R_t)\sqrt{12}$ | Niedriger, bei sonst gleichen Bedingungen |
-| **Sharpe-Ratio ($r_f=0$)** | $12\overline R/(\operatorname{sd}(R_t)\sqrt{12})$ | Höher |
+| **Annualisierte Volatilität** | $\mathrm{SD}(R_t)\sqrt{12}$ | Niedriger, bei sonst gleichen Bedingungen |
+| **Sharpe-Ratio ($r_f=0$)** | $12\overline R/(\mathrm{SD}(R_t)\sqrt{12})$ | Höher |
 | **Maximaler Drawdown** | $\min_t\left[V_t/\max_{s\leq t}V_s-1\right]$ | Näher an null |
 | **Empirischer monatlicher CVaR** | Negativ ausgewiesenes mittleres Verlustergebnis im schlechtesten Anteil $(1-\alpha)$ der Monatsbeobachtungen, gemäß Implementierung | Näher an null |
 | **Endvermögen (NAV)** | Depotwert nach modellierten Handelskosten | Höher |
