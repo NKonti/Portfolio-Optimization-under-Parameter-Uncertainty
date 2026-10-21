@@ -42,7 +42,7 @@ Untersucht werden fünf Verfahren, die unterschiedliche Antworten auf diese Unsi
 | **HYG** | US-Hochzins-Unternehmensanleihen | **XLF** | US-Finanzsektoraktien |
 | **XLV** | US-Gesundheitssektoraktien | **XLE** | US-Energiesektoraktien |
 
-Die zwölf ETFs bilden Aktien-, Staatsanleihen-, Kredit-, Immobilien- und Goldexposures ab. **Wichtig:** Die Sektor-ETFs überschneiden sich wirtschaftlich mit den breiten Aktienindizes. Zwölf ETFs entsprechen daher nicht zwölf voneinander unabhängigen Anlageklassen.
+Das ETF-Universum umfasst zwölf Instrumente aus unterschiedlichen Anlageklassen und Aktienmarktsegmenten. Die risikobasierten Optimierungsverfahren berücksichtigen statistische Abhängigkeiten zwischen den ETF-Renditen durch Kovarianzschätzungen beziehungsweise gemeinsame historische Renditeszenarien. Dadurch fließen Diversifikationseffekte unmittelbar in die Allokationsentscheidungen ein. Ergänzend begrenzen einheitliche Positionsobergrenzen die Konzentration auf einzelne ETFs. Wirtschaftliche Überschneidungen zwischen breiten Aktienindizes und Sektor-ETFs werden dabei nicht durch gesonderte Sektorlimits begrenzt.
 
 ## 3. Projektarchitektur
 
