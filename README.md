@@ -1,4 +1,4 @@
-# Portfoliooptimierung unter Parameterschätzunsicherheit
+# Portfoliooptimierung unter Parameterunsicherheit
 
 **Eine empirische Untersuchung klassischer, robuster und szenariobasierter Portfoliooptimierung unter realistischen Handelsrestriktionen**
 
