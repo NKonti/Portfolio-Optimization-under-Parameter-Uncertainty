@@ -1,6 +1,6 @@
 # Portfoliooptimierung unter Parameterunsicherheit
 
-**Eine Untersuchung klassischer, robuster und szenariobasierter Portfoliooptimierung unter realistischen Handelsrestriktionen**
+**Eine Untersuchung von klassischer, robuster und szenariobasierter Portfoliooptimierung unter realistischen Handelsrestriktionen**
 
 > **Forschungsfrage:** Können fortgeschrittene Portfoliooptimierungsverfahren bei unsicheren Renditeerwartungen und realistischen Handelsrestriktionen eine bessere realisierte risikoadjustierte Performance erzielen als eine einfache Gleichgewichtung?
 
