@@ -25,9 +25,9 @@ Dieses Repository enthält eine reproduzierbare Forschungsumgebung mit **12 ETFs
 
 ## 1. Forschungsziel und Einordnung
 
-Die klassische Portfoliotheorie optimiert anhand erwarteter Renditen und geschätzter Risiken. In der Praxis sind diese Größen jedoch nicht bekannt, sondern müssen aus begrenzten historischen Stichproben geschätzt werden. Gerade die erwarteten Renditen sind häufig mit erheblichen Schätzfehlern behaftet. Mathematisch anspruchsvollere Optimierung führt deshalb nicht automatisch zu besseren Anlageergebnissen.
+Die klassische Mittelwert-Varianz-Portfoliotheorie basiert auf erwarteten Renditen sowie den Varianzen und Kovarianzen der Anlagerenditen. In der praktischen Anwendung sind diese Größen jedoch nicht bekannt und müssen anhand historischer Daten geschätzt werden. Insbesondere die erwarteten Renditen können erheblichen Schätzfehlern unterliegen, wodurch optimierte Portfolios empfindlich auf ungenaue Eingangsparameter reagieren können. Mathematisch anspruchsvollere Optimierungsverfahren führen daher nicht zwangsläufig zu besseren Anlageergebnissen.
 
-Untersucht werden fünf Verfahren, die unterschiedliche Antworten auf diese Unsicherheit geben: einfache Diversifikation, klassische Mittelwert-Varianz-Optimierung, zwei robuste Ansätze und eine szenariobasierte Optimierung des Verlustrisikos. Die Verfahren werden unter vergleichbaren Handelsbedingungen bewertet.
+Vor diesem Hintergrund untersucht das Projekt, wie sich unterschiedliche Ansätze der Portfoliokonstruktion unter Parameterschätzunsicherheit bewähren. Verglichen werden die einfache Gleichgewichtung (EQ), die klassische Mittelwert-Varianz-Optimierung (MV), zwei robuste Optimierungsverfahren (ELL und BS) sowie eine szenariobasierte Optimierung mit Fokus auf das Verlustrisiko (STOCH). Die Verfahren unterscheiden sich insbesondere darin, wie sie Renditeerwartungen, Risiken und Schätzunsicherheit bei der Portfolioallokation berücksichtigen. Ihre Ergebnisse werden anhand eines historischen Walk-Forward-Backtests unter einheitlichen Anlage- und Handelsrestriktionen verglichen.
 
 **Untersuchungscharakter:** empirisch und explorativ. Die Sensitivitätsanalyse ist **keine** historische Parameterkalibrierung. Die nachträglich erfolgreichste Parametereinstellung darf nicht als unabhängig validierte Anlagestrategie interpretiert werden.
 
